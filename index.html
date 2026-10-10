@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AcademicHub | Department Resource Portal</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar"><div class="container nav"><a class="brand" href="{{ url_for('index') }}">Academic<span>Hub</span></a><a class="nav-link" href="#add-resource">Add Resource</a></div></header>
+  <main>
+    <section class="hero"><div class="container hero-inner">
+      <span class="eyebrow">DEPARTMENT RESOURCE SHARING</span>
+      <h1>Find. Learn. Share.<br><span>Academic Resources.</span></h1>
+      <p>Lecture notes, lab manuals, presentations and previous-year papers — organised by semester and subject.</p>
+      <form class="search" method="get" action="{{ url_for('index') }}">
+        <input type="search" name="q" value="{{ q }}" placeholder="Search subject, faculty, code or resource..." aria-label="Search resources">
+        <button type="submit">Search</button>
+      </form>
+    </div></section>
+
+    <section class="container content">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}<div class="messages">{% for category, message in messages %}<div class="alert {{ category }}">{{ message }}</div>{% endfor %}</div>{% endif %}
+      {% endwith %}
+      <div class="stats">
+        <div class="stat"><span>Total resources</span><strong>{{ total }}</strong></div>
+        <div class="stat"><span>Faculty verified</span><strong>{{ verified_count }}</strong></div>
+        <div class="stat"><span>Quick access</span><strong>Search + Filter</strong></div>
+      </div>
+
+      <div class="section-heading"><div><span class="section-no">01</span><h2>Browse Resources</h2></div><span class="muted">Search, filter and open your study material</span></div>
+      <form class="filters" method="get" action="{{ url_for('index') }}">
+        <input type="search" name="q" value="{{ q }}" placeholder="Search resources..." aria-label="Search resources">
+        <select name="semester" aria-label="Filter by semester"><option value="">All semesters</option>{% for s in ['1','2','3','4','5','6','7','8'] %}<option value="{{ s }}" {% if semester == s %}selected{% endif %}>Semester {{ s }}</option>{% endfor %}</select>
+        <select name="type" aria-label="Filter by type"><option value="">All resource types</option>{% for t in ['Lecture Notes','Lab Manual','Previous Year Paper','Presentation','Other'] %}<option value="{{ t }}" {% if resource_type == t %}selected{% endif %}>{{ t }}</option>{% endfor %}</select>
+        <button type="submit" class="secondary-button">Apply filters</button><a class="clear-link" href="{{ url_for('index') }}">Clear</a>
+      </form>
+
+      <div class="resource-grid">
+        {% for r in resources %}
+        <article class="resource-card">
+          <div class="card-top"><span class="file-icon">{{ 'PDF' if r.filename.lower().endswith('.pdf') else 'DOC' if r.filename else 'NOTE' }}</span><span class="badge {{ 'verified' if r.verified else 'pending' }}">{{ '✓ Faculty Verified' if r.verified else 'Pending review' }}</span></div>
+          <span class="type-label">{{ r.resource_type }} · Semester {{ r.semester }}</span>
+          <h3>{{ r.title }}</h3><p class="subject">{{ r.subject }}{% if r.subject_code %} <span>({{ r.subject_code }})</span>{% endif %}</p>
+          {% if r.description %}<p class="description">{{ r.description }}</p>{% endif %}
+          <div class="card-meta"><span>Faculty: {{ r.faculty or 'Not specified' }}</span></div>
+          <div class="card-actions">
+            {% if r.filename %}<a class="primary-button" href="{{ url_for('download_file', filename=r.filename) }}">Download file</a>{% elif r.link %}<a class="primary-button" href="{{ r.link }}" target="_blank" rel="noopener">Open resource ↗</a>{% else %}<span class="no-file">No file or link attached</span>{% endif %}
+            <form method="post" action="{{ url_for('verify_resource', resource_id=r.id) }}"><button class="text-button" type="submit" title="Demo verification toggle">{{ 'Unverify' if r.verified else 'Mark verified' }}</button></form>
+          </div>
+        </article>
+        {% else %}<div class="empty"><h3>No resources found</h3><p>Try another keyword or clear the filters. You can also add a resource below.</p></div>{% endfor %}
+      </div>
+
+      <section class="add-section" id="add-resource">
+        <div class="section-heading"><div><span class="section-no">02</span><h2>Add a Resource</h2></div><span class="muted">New entries are saved in a local SQLite database</span></div>
+        <form class="resource-form" method="post" action="{{ url_for('add_resource') }}" enctype="multipart/form-data">
+          <label>Resource title *<input name="title" required placeholder="e.g. Unit 1 Lecture Notes"></label>
+          <label>Subject name *<input name="subject" required placeholder="e.g. Data Structures"></label>
+          <label>Subject code<input name="subject_code" placeholder="e.g. KCS301"></label>
+          <label>Semester *<select name="semester" required><option value="">Select semester</option>{% for s in range(1,9) %}<option value="{{ s }}">Semester {{ s }}</option>{% endfor %}</select></label>
+          <label>Resource type *<select name="resource_type" required><option value="">Select type</option>{% for t in ['Lecture Notes','Lab Manual','Previous Year Paper','Presentation','Other'] %}<option>{{ t }}</option>{% endfor %}</select></label>
+          <label>Faculty name<input name="faculty" placeholder="e.g. Computer Science Faculty"></label>
+          <label class="full">Description<textarea name="description" rows="3" placeholder="Short description of this material"></textarea></label>
+          <label class="full">Upload file (PDF, DOC, PPT, TXT)<input type="file" name="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt"></label>
+          <label class="full">Or resource URL<input type="url" name="link" placeholder="https://..."></label>
+          <div class="full form-footer"><p>* Required fields. This is a classroom demo, not a secure public portal.</p><button class="primary-button" type="submit">Save Resource</button></div>
+        </form>
+      </section>
+    </section>
+  </main>
+  <footer><div class="container">AcademicHub · Simple Python + Flask mini project</div></footer>
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
