@@ -1,0 +1,6 @@
+__pycache__/
+*.py[cod]
+academichub.db
+.venv/
+uploads/*
+!uploads/.gitkeep
